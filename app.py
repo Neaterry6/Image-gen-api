@@ -34,7 +34,7 @@ def search_images():
 
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Cookie": load_cookies()  # ✅ Using Netscape-style cookies
+        "Cookie": load_cookies()
     }
 
     bing_url = f"https://www.bing.com/images/search?q={query}&form=HDRSC2"
@@ -51,19 +51,21 @@ def generate_images():
 
     headers = {
         "User-Agent": "Mozilla/5.0",
-        "Cookie": load_cookies()  # ✅ Using Netscape-style cookies
+        "Cookie": load_cookies()
     }
 
     bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
     response = requests.get(bing_url, headers=headers)
 
-    # ✅ Extract Image URL from Bing's HTML response
+    # ✅ Extract Image URL properly
     soup = BeautifulSoup(response.text, "html.parser")
-    image_element = soup.find("img")  # Search for the generated image
+    image_element = soup.find("img")
 
     if image_element:
-        image_url = image_element["src"]  # Get the actual image link
-        return jsonify({"generated_image": image_url})
+        image_path = image_element["src"]  # ✅ Extracted relative path
+        full_image_url = f"https://www.bing.com{image_path}"  # ✅ Construct full image URL
+
+        return jsonify({"generated_image": full_image_url})
     else:
         return jsonify({"error": "Failed to extract image URL!"})
 
