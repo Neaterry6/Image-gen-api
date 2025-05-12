@@ -1,7 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
-import time
 
 app = Flask(__name__)
 
@@ -62,18 +61,17 @@ def generate_images():
     # ✅ Step 2: Parse Bing's AI-generated image response properly
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # ✅ Bing AI-generated images are stored inside a special div class
-    image_element = soup.find("div", class_="img_cont")
-    
-    if image_element:
-        img_tag = image_element.find("img")
-        if img_tag and img_tag.get("src"):
-            image_url = img_tag["src"]
+    # ✅ Look for AI-generated images that match the prompt (Improved Filtering)
+    matching_images = soup.find_all("img")
+    for img in matching_images:
+        alt_text = img.get("alt", "").lower()  # ✅ Check if the image matches the prompt
+        if prompt.lower() in alt_text:
+            image_url = img.get("src")
             if not image_url.startswith("https"):
                 image_url = f"https://www.bing.com{image_url}"
             return jsonify({"generated_image": image_url})
-    
-    return jsonify({"error": "Failed to extract the final AI-generated image! Bing may need more time to process."})
+
+    return jsonify({"error": "Failed to find a matching AI-generated image! Try rewording the prompt."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
