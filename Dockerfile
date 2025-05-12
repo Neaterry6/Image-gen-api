@@ -14,5 +14,5 @@ COPY . .
 # Expose the default Flask port
 EXPOSE 5000
 
-# Run the Flask app
-CMD ["python", "app.py"
+# Run the Flask app explicitly with Python 3
+CMD ["python3", "app.py"]
