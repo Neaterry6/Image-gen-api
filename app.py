@@ -54,20 +54,19 @@ def generate_images():
         "Cookie": load_cookies()
     }
 
+    # ✅ Step 1: Request Bing AI Image Generation Page
     bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
-    response = requests.get(bing_url, headers=headers)
+    response = requests.get(bing_url, headers=headers, allow_redirects=True)
 
-    # ✅ Extract Image URL properly
+    # ✅ Step 2: Follow Redirects & Extract the Real AI-Generated Image URL
     soup = BeautifulSoup(response.text, "html.parser")
-    image_element = soup.find("img")
+    image_element = soup.find("img", class_="mimg")  # Look for main AI-generated image
 
     if image_element:
-        image_path = image_element["src"]  # ✅ Extracted relative path
-        full_image_url = f"https://www.bing.com{image_path}"  # ✅ Construct full image URL
-
-        return jsonify({"generated_image": full_image_url})
+        image_url = image_element["src"]
+        return jsonify({"generated_image": image_url})  # ✅ AI-generated image
     else:
-        return jsonify({"error": "Failed to extract image URL!"})
+        return jsonify({"error": "Failed to extract AI-generated image!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
