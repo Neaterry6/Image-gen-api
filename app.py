@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 import requests
+from bs4 import BeautifulSoup
 
 app = Flask(__name__)
 
@@ -53,10 +54,18 @@ def generate_images():
         "Cookie": load_cookies()  # ✅ Using Netscape-style cookies
     }
 
-    bing_url = f"https://www.bing.com/images/create?q={prompt}&form=HDRSC2"
+    bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
     response = requests.get(bing_url, headers=headers)
 
-    return jsonify({"generated_image": response.text})  # ✅ Parsing needed for generated images
+    # ✅ Extract Image URL from Bing's HTML response
+    soup = BeautifulSoup(response.text, "html.parser")
+    image_element = soup.find("img")  # Search for the generated image
+
+    if image_element:
+        image_url = image_element["src"]  # Get the actual image link
+        return jsonify({"generated_image": image_url})
+    else:
+        return jsonify({"error": "Failed to extract image URL!"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
