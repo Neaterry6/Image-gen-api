@@ -4,6 +4,11 @@ import json
 
 app = Flask(__name__)
 
+# ✅ Health Check Route
+@app.route("/")
+def home():
+    return jsonify({"message": "API is working!"})
+
 # 🔍 Bing Image Search API
 @app.route("/search")
 def search_images():
@@ -26,7 +31,7 @@ def search_images():
     bing_url = f"https://www.bing.com/images/search?q={query}&form=HDRSC2"
     response = requests.get(bing_url, headers=headers)
 
-    return jsonify({"images": response.text})  # ✅ You'll need to parse images properly
+    return jsonify({"images": response.text})  # ✅ You’ll need to properly parse images in the next step
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True
+    app.run(host="0.0.0.0", port=5000, debug=True)
