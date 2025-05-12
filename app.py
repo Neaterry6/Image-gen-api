@@ -1,77 +1,53 @@
 from flask import Flask, request, jsonify
-import requests
-from bs4 import BeautifulSoup
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+import time
 
 app = Flask(__name__)
 
-# ✅ Function to Load Netscape Cookies
-def load_cookies():
-    """Read cookies.txt in Netscape format & convert to a Cookie string."""
-    try:
-        with open("cookies.txt", "r") as f:
-            cookies = []
-            for line in f:
-                if not line.startswith("#") and len(line.strip().split("\t")) >= 6:
-                    parts = line.strip().split("\t")
-                    cookie_name = parts[5]
-                    cookie_value = parts[6] if len(parts) > 6 else ""
-                    cookies.append(f"{cookie_name}={cookie_value}")
-            return "; ".join(cookies)
-    except FileNotFoundError:
-        return None
+# ✅ Configure Selenium WebDriver
+def setup_driver():
+    options = webdriver.ChromeOptions()
+    options.add_argument("--headless")  # ✅ Run in background (no browser window)
+    options.add_argument("--disable-gpu")
+    options.add_argument("--no-sandbox")
+    
+    driver = webdriver.Chrome(options=options)  # ✅ Make sure ChromeDriver is installed
+    return driver
 
-# ✅ Health Check Route
-@app.route("/")
-def home():
-    return jsonify({"message": "API is working!"})
-
-# 🔍 **Bing Image Search**
-@app.route("/search")
-def search_images():
-    query = request.args.get("q")
-    if not query:
-        return jsonify({"error": "Provide a search query!"}), 400
-
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Cookie": load_cookies()
-    }
-
-    bing_url = f"https://www.bing.com/images/search?q={query}&form=HDRSC2"
-    response = requests.get(bing_url, headers=headers)
-
-    return jsonify({"images": response.text})  # ✅ Parsing needed for image URLs
-
-# 🎨 **Bing AI Image Generation**
+# 🎨 **Bing AI Image Generation (Automated)**
 @app.route("/generate")
 def generate_images():
     prompt = request.args.get("prompt")
     if not prompt:
         return jsonify({"error": "Provide an image prompt!"}), 400
 
-    headers = {
-        "User-Agent": "Mozilla/5.0",
-        "Cookie": load_cookies()
-    }
+    driver = setup_driver()
+    
+    try:
+        # ✅ Open Bing Image Creator
+        driver.get("https://www.bing.com/images/create")
 
-    # ✅ Step 1: Request Bing AI Image Creator
-    bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
-    response = requests.get(bing_url, headers=headers, allow_redirects=True)
+        # ✅ Locate the input box and type the prompt
+        search_box = driver.find_element(By.NAME, "q")
+        search_box.send_keys(prompt)
+        search_box.send_keys(Keys.RETURN)
 
-    # ✅ Step 2: Parse Bing's AI-generated image response properly
-    soup = BeautifulSoup(response.text, "html.parser")
+        # ✅ Wait for Bing to generate the image (increase if needed)
+        time.sleep(8)
 
-    # ✅ Look for AI-generated images that match the prompt (Improved Filtering)
-    matching_images = soup.find_all("img")
-    for img in matching_images:
-        alt_text = img.get("alt", "").lower()  # ✅ Check if the image matches the prompt
-        if prompt.lower() in alt_text:
-            image_url = img.get("src")
-            if not image_url.startswith("https"):
-                image_url = f"https://www.bing.com{image_url}"
-            return jsonify({"generated_image": image_url})
+        # ✅ Extract the AI-generated image URL
+        image_element = driver.find_element(By.CLASS_NAME, "mimg")  # Locate the correct image
+        image_url = image_element.get_attribute("src")
 
-    return jsonify({"error": "Failed to find a matching AI-generated image! Try rewording the prompt."})
+        driver.quit()  # ✅ Close browser after scraping
+
+        return jsonify({"generated_image": image_url})
+    
+    except Exception as e:
+        driver.quit()  # ✅ Close browser in case of error
+        return jsonify({"error": f"Failed to generate image! {str(e)}"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
