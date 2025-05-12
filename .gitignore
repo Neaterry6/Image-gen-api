@@ -2,5 +2,5 @@ __pycache__/
 *.log
 .env
 cookies.txt
-cookiew.json
+cookies.json
 chromedriver
