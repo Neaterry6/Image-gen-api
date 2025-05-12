@@ -59,24 +59,21 @@ def generate_images():
     bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
     response = requests.get(bing_url, headers=headers, allow_redirects=True)
 
-    # ✅ Step 2: Follow redirects and extract the final image
+    # ✅ Step 2: Parse Bing's AI-generated image response properly
     soup = BeautifulSoup(response.text, "html.parser")
 
-    # ✅ Bing AI image result page sometimes takes time to process, so retry after a few seconds
-    time.sleep(5)  # Wait for Bing to generate image
-
-    image_element = soup.find("img", class_="mimg") or soup.find("img")
-
+    # ✅ Bing AI-generated images are stored inside a special div class
+    image_element = soup.find("div", class_="img_cont")
+    
     if image_element:
-        image_url = image_element.get("src") or image_element.get("data-src")
-
-        # ✅ Ensure full URL format
-        if image_url and not image_url.startswith("https"):
-            image_url = f"https://www.bing.com{image_url}"
-
-        return jsonify({"generated_image": image_url})
-    else:
-        return jsonify({"error": "Bing generated the image, but I couldn't extract the final URL! Try again in a few seconds."})
+        img_tag = image_element.find("img")
+        if img_tag and img_tag.get("src"):
+            image_url = img_tag["src"]
+            if not image_url.startswith("https"):
+                image_url = f"https://www.bing.com{image_url}"
+            return jsonify({"generated_image": image_url})
+    
+    return jsonify({"error": "Failed to extract the final AI-generated image! Bing may need more time to process."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
