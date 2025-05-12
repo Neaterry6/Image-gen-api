@@ -30,7 +30,7 @@ def generate_images():
     driver = setup_driver()
     
     try:
-        # ✅ Open Bing Image Creator
+        # ✅ Open Bing AI Image Creator
         driver.get("https://www.bing.com/images/create")
 
         # ✅ Locate the input box and type the prompt
@@ -38,20 +38,23 @@ def generate_images():
         search_box.send_keys(prompt)
         search_box.send_keys(Keys.RETURN)
 
-        # ✅ Wait for Bing to generate the image (adjust if needed)
-        time.sleep(10)
+        # 🔥 **Wait Longer for AI to Generate Image**
+        time.sleep(20)  # Increased from 10 to 20 seconds
 
-        # ✅ Extract the AI-generated image URL
-        image_element = driver.find_element(By.CLASS_NAME, "mimg")  # Locate the correct image
-        image_url = image_element.get_attribute("src")
+        # ✅ Extract the correct AI-generated image
+        images = driver.find_elements(By.TAG_NAME, "img")  # Get all images on the page
+        for img in images:
+            if "bing.com" in img.get_attribute("src"):  # ✅ Ensure it's from Bing AI
+                image_url = img.get_attribute("src")
+                driver.quit()  # ✅ Close browser
+                return jsonify({"generated_image": image_url})
 
-        driver.quit()  # ✅ Close browser after scraping
+        driver.quit()  
+        return jsonify({"error": "Failed to find AI-generated image. Try a different prompt!"})
 
-        return jsonify({"generated_image": image_url})
-    
     except Exception as e:
-        driver.quit()  # ✅ Close browser in case of error
-        return jsonify({"error": f"Failed to generate image! {str(e)}"})
+        driver.quit()  
+        return jsonify({"error": f"Error generating image: {str(e)}"})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
