@@ -1,5 +1,7 @@
 from flask import Flask, request, jsonify
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 import time
@@ -8,12 +10,14 @@ app = Flask(__name__)
 
 # ✅ Configure Selenium WebDriver
 def setup_driver():
-    options = webdriver.ChromeOptions()
-    options.add_argument("--headless")  # ✅ Run in background (no browser window)
-    options.add_argument("--disable-gpu")
-    options.add_argument("--no-sandbox")
-    
-    driver = webdriver.Chrome(options=options)  # ✅ Make sure ChromeDriver is installed
+    chrome_options = Options()
+    chrome_options.add_argument("--headless")  # ✅ Run without opening a window
+    chrome_options.add_argument("--disable-gpu")
+    chrome_options.add_argument("--no-sandbox")
+    chrome_options.binary_location = "/usr/bin/google-chrome"  # ✅ Ensure correct Chrome path
+
+    service = Service("/usr/local/bin/chromedriver")  # ✅ Ensure correct WebDriver path
+    driver = webdriver.Chrome(service=service, options=chrome_options)
     return driver
 
 # 🎨 **Bing AI Image Generation (Automated)**
@@ -34,8 +38,8 @@ def generate_images():
         search_box.send_keys(prompt)
         search_box.send_keys(Keys.RETURN)
 
-        # ✅ Wait for Bing to generate the image (increase if needed)
-        time.sleep(8)
+        # ✅ Wait for Bing to generate the image (adjust if needed)
+        time.sleep(10)
 
         # ✅ Extract the AI-generated image URL
         image_element = driver.find_element(By.CLASS_NAME, "mimg")  # Locate the correct image
