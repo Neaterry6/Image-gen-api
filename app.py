@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 from bs4 import BeautifulSoup
+import time
 
 app = Flask(__name__)
 
@@ -54,19 +55,28 @@ def generate_images():
         "Cookie": load_cookies()
     }
 
-    # ✅ Step 1: Request Bing AI Image Generation Page
+    # ✅ Step 1: Request Bing AI Image Creator
     bing_url = f"https://www.bing.com/images/create?q={prompt}&form=GENILP"
     response = requests.get(bing_url, headers=headers, allow_redirects=True)
 
-    # ✅ Step 2: Follow Redirects & Extract the Real AI-Generated Image URL
+    # ✅ Step 2: Follow redirects and extract the final image
     soup = BeautifulSoup(response.text, "html.parser")
-    image_element = soup.find("img", class_="mimg")  # Look for main AI-generated image
+
+    # ✅ Bing AI image result page sometimes takes time to process, so retry after a few seconds
+    time.sleep(5)  # Wait for Bing to generate image
+
+    image_element = soup.find("img", class_="mimg") or soup.find("img")
 
     if image_element:
-        image_url = image_element["src"]
-        return jsonify({"generated_image": image_url})  # ✅ AI-generated image
+        image_url = image_element.get("src") or image_element.get("data-src")
+
+        # ✅ Ensure full URL format
+        if image_url and not image_url.startswith("https"):
+            image_url = f"https://www.bing.com{image_url}"
+
+        return jsonify({"generated_image": image_url})
     else:
-        return jsonify({"error": "Failed to extract AI-generated image!"})
+        return jsonify({"error": "Bing generated the image, but I couldn't extract the final URL! Try again in a few seconds."})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
