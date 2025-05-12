@@ -16,12 +16,15 @@ RUN dpkg -i google-chrome-stable_current_amd64.deb || apt-get -fy install
 # ✅ Install Correct ChromeDriver Version Based on System Architecture
 RUN ARCH=$(uname -m) && \
     if [ "$ARCH" == "x86_64" ]; then \
-      wget -q -O /usr/local/bin/chromedriver "https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip"; \
+      wget -q -O /usr/local/bin/chromedriver.zip "https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux64.zip"; \
     elif [ "$ARCH" == "arm64" ]; then \
-      wget -q -O /usr/local/bin/chromedriver "https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux_arm64.zip"; \
+      wget -q -O /usr/local/bin/chromedriver.zip "https://chromedriver.storage.googleapis.com/$(wget -q -O - https://chromedriver.storage.googleapis.com/LATEST_RELEASE)/chromedriver_linux_arm64.zip"; \
     fi
 
-RUN unzip /usr/local/bin/chromedriver
+# ✅ Ensure ChromeDriver Actually Exists Before Unzipping
+RUN ls -l /usr/local/bin/chromedriver.zip && unzip /usr/local/bin/chromedriver.zip
+
+# ✅ Make It Executable
 RUN chmod +x /usr/local/bin/chromedriver
 
 # ✅ Set ChromeDriver as environment variable
